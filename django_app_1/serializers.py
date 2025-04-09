@@ -10,13 +10,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = '__all__'
+        exclude = ['is_staff', 'is_superuser', 'is_active', 'last_login', 'user_permissions', 'groups']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def create(self, validated_data):
-        # Usamos el método create_user del manager para hashear la contraseña
         return Usuario.objects.create_user(
             correo=validated_data['correo'],
             nombre=validated_data['nombre'],

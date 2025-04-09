@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
 class UsuarioManager(BaseUserManager):
@@ -14,18 +14,24 @@ class UsuarioManager(BaseUserManager):
             nombre=nombre,
             **extra_fields
         )
-        usuario.set_password(password)  # Hashea la contraseña de forma segura
+        usuario.set_password(password)
         usuario.save(using=self._db)
         return usuario
 
     def create_superuser(self, correo, nombre, password, **extra_fields):
         extra_fields.setdefault('rol', 'admin')
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('El superusuario debe tener is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('El superusuario debe tener is_superuser=True.')
+        
         return self.create_user(correo, nombre, password, **extra_fields)
 
-
-class Usuario(AbstractBaseUser):
-    last_login = None
-
+class Usuario(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Administrador'
         CLIENTE = 'cliente', 'Cliente'
@@ -37,6 +43,8 @@ class Usuario(AbstractBaseUser):
         choices=Role.choices,
         default=Role.CLIENTE
     )
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
 
     objects = UsuarioManager()
 
@@ -45,6 +53,8 @@ class Usuario(AbstractBaseUser):
 
     def __str__(self):
         return self.nombre
+
+
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
